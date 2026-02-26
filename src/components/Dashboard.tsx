@@ -8,7 +8,6 @@ import { Coordinates, CalculationMethod, PrayerTimes as AdhanPrayerTimes } from 
 
 import PrayerTracker from './PrayerTracker';
 import QuickActions from './QuickActions';
-import PhoneWidget from './PhoneWidget';
 
 export default function Dashboard() {
   const { tasks, toggleTask, events, habits, habitLogs, hijriAdjustment } = useApp();
@@ -25,8 +24,24 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 pb-24">
-      {/* Phone Style Widget Header */}
-      <PhoneWidget />
+      {/* Header Card - Exact Image Style */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-[#F1F3F4] dark:bg-slate-800 rounded-[2rem] p-6 shadow-sm border border-slate-200 dark:border-slate-700 text-center relative"
+      >
+        <div className="flex items-center justify-center gap-3 text-[#2D3E33] dark:text-white mb-1">
+          <h2 className="text-2xl font-bold">
+            {toBanglaNumber(hijri.day)} {hijri.monthName} {toBanglaNumber(hijri.year)} হি. ইয়াওমুল খামীস
+          </h2>
+          <div className="w-10 h-10 bg-[#2D3E33] rounded-full flex items-center justify-center">
+            <Moon size={20} className="text-white fill-white" />
+          </div>
+        </div>
+        <p className="text-[#5F6368] dark:text-slate-400 font-medium text-sm">
+          {format(today, 'EEEE')}, {toBanglaNumber(bangla.day)} {bangla.monthName} {toBanglaNumber(bangla.year)} বঙ্গাব্দ, {bangla.season}
+        </p>
+      </motion.div>
 
       {/* Prayer Tracker Card */}
       <PrayerTracker />

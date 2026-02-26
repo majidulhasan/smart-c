@@ -8,18 +8,7 @@ import HabitTracker from './components/HabitTracker';
 import IslamicEvents from './components/IslamicEvents';
 import PrayerTimes from './components/PrayerTimes';
 import SettingsScreen from './components/SettingsScreen';
-import PhoneWidget from './components/PhoneWidget';
 import { motion, AnimatePresence } from 'motion/react';
-
-function WidgetPage() {
-  return (
-    <div className="min-h-screen bg-[url('https://picsum.photos/seed/nature/1080/1920')] bg-cover bg-center flex items-start justify-center p-8 pt-20">
-      <div className="w-full max-w-md backdrop-blur-sm bg-white/10 p-4 rounded-[3rem]">
-        <PhoneWidget />
-      </div>
-    </div>
-  );
-}
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
@@ -42,7 +31,6 @@ export default function App() {
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 selection:bg-emerald-100 selection:text-emerald-900 transition-colors duration-300">
           <AnimatePresence mode="wait">
             <Routes>
-              <Route path="/widget" element={<WidgetPage />} />
               <Route path="/" element={<PageWrapper><Dashboard /></PageWrapper>} />
               <Route path="/calendar" element={<PageWrapper><div className="space-y-8 pb-24"><h1 className="text-3xl font-bold px-2 dark:text-white">Calendar</h1><MultiCalendar /></div></PageWrapper>} />
               <Route path="/habits" element={<PageWrapper><HabitTracker /></PageWrapper>} />
