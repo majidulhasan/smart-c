@@ -7,6 +7,7 @@ import { CheckCircle2, Circle, Plus, TrendingUp, Calendar as CalendarIcon, Moon,
 import { Coordinates, CalculationMethod, PrayerTimes as AdhanPrayerTimes } from 'adhan';
 
 import PrayerTracker from './PrayerTracker';
+import QuickActions from './QuickActions';
 
 export default function Dashboard() {
   const { tasks, toggleTask, events, habits, habitLogs, hijriAdjustment } = useApp();
@@ -22,7 +23,7 @@ export default function Dashboard() {
   const progress = todayTasks.length > 0 ? (completedTasks / todayTasks.length) * 100 : 0;
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-8 pb-24">
       {/* Header Card - Exact Image Style */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -44,6 +45,9 @@ export default function Dashboard() {
 
       {/* Prayer Tracker Card */}
       <PrayerTracker />
+
+      {/* Quick Shortcuts Widget */}
+      <QuickActions />
 
       {/* Productivity Progress */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
