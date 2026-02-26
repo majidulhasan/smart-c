@@ -93,11 +93,17 @@ export function getBanglaDate(date: Date) {
     else { bMonth = 0; bDay = 1; } // Fallback
   }
 
+  const seasons = [
+    "গ্রীষ্মকাল", "বর্ষাকাল", "শরৎকাল", "হেমন্তকাল", "শীতকাল", "বসন্তকাল"
+  ];
+  const bSeason = seasons[Math.floor(bMonth / 2)];
+
   return {
     day: bDay,
     month: bMonth + 1,
     monthName: months[bMonth],
-    year: bYear
+    year: bYear,
+    season: bSeason
   };
 }
 

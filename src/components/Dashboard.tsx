@@ -6,21 +6,12 @@ import { motion } from 'motion/react';
 import { CheckCircle2, Circle, Plus, TrendingUp, Calendar as CalendarIcon, Moon, Clock } from 'lucide-react';
 import { Coordinates, CalculationMethod, PrayerTimes as AdhanPrayerTimes } from 'adhan';
 
+import PrayerTracker from './PrayerTracker';
+
 export default function Dashboard() {
   const { tasks, toggleTask, events, habits, habitLogs, hijriAdjustment } = useApp();
-  const [nextPrayerTime, setNextPrayerTime] = React.useState<{ name: string, time: Date } | null>(null);
   const today = new Date();
 
-  React.useEffect(() => {
-    // Default to Dhaka for dashboard quick view if no geo yet
-    const coords = new Coordinates(23.8103, 90.4125);
-    const params = CalculationMethod.Karachi();
-    const times = new AdhanPrayerTimes(coords, today, params);
-    const next = times.nextPrayer();
-    if (next && next !== 'none') {
-      setNextPrayerTime({ name: next, time: times.timeForPrayer(next)! });
-    }
-  }, []);
   const todayStr = format(today, 'yyyy-MM-dd');
   
   const hijri = getHijriDate(today, hijriAdjustment);
@@ -32,47 +23,25 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 pb-24">
-      {/* Header Card */}
+      {/* Header Card - Multi Calendar Style */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-600 to-teal-700 p-8 text-white shadow-2xl"
+        className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 shadow-sm border border-slate-100 dark:border-slate-700 text-center space-y-2"
       >
-        <div className="relative z-10">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-emerald-100 font-medium tracking-wide mb-1 opacity-80 uppercase text-xs">Today's Overview</p>
-              <h1 className="text-3xl font-bold mb-2">{format(today, 'EEEE, d MMM')}</h1>
-            </div>
-            <div className="bg-white/20 backdrop-blur-md p-3 rounded-2xl">
-              <Moon className="text-amber-300" />
-            </div>
-          </div>
-          
-          <div className="flex gap-4 mt-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 flex-1 border border-white/10">
-              <p className="text-xs text-emerald-100 opacity-70 mb-1">Hijri Date</p>
-              <p className="text-lg font-bold">{hijri.day} {hijri.monthName}</p>
-            </div>
-            {nextPrayerTime && (
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 flex-1 border border-white/10">
-                <p className="text-xs text-emerald-100 opacity-70 mb-1">Next: {nextPrayerTime.name}</p>
-                <p className="text-lg font-bold">{format(nextPrayerTime.time, 'h:mm a')}</p>
-              </div>
-            )}
-            {!nextPrayerTime && (
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 flex-1 border border-white/10">
-                <p className="text-xs text-emerald-100 opacity-70 mb-1">Bangla Date</p>
-                <p className="text-lg font-bold">{toBanglaNumber(bangla.day)} {bangla.monthName}</p>
-              </div>
-            )}
-          </div>
+        <div className="flex items-center justify-center gap-2 text-slate-800 dark:text-white">
+          <h2 className="text-2xl font-bold">
+            {toBanglaNumber(hijri.day)} {hijri.monthName} {toBanglaNumber(hijri.year)} হি.
+          </h2>
+          <Moon size={24} className="text-emerald-600 fill-emerald-600/20" />
         </div>
-        
-        {/* Decorative elements */}
-        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute -left-10 -top-10 w-40 h-40 bg-emerald-400/20 rounded-full blur-3xl" />
+        <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">
+          {format(today, 'EEEE')}, {toBanglaNumber(bangla.day)} {bangla.monthName} {toBanglaNumber(bangla.year)} বঙ্গাব্দ, {bangla.season}
+        </p>
       </motion.div>
+
+      {/* Prayer Tracker Card */}
+      <PrayerTracker />
 
       {/* Productivity Progress */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
