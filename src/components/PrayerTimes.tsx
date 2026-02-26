@@ -45,6 +45,36 @@ export default function PrayerTimes() {
     "Turkey": CalculationMethod.Turkey(),
   };
 
+  const refreshLocation = () => {
+    setLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          const newCoords = new Coordinates(latitude, longitude);
+          setCoords(newCoords);
+          
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+            const data = await res.json();
+            const name = data.address.city || data.address.town || data.address.village || data.address.suburb || "Current Location";
+            setLocationName(name);
+            localStorage.setItem('prayer_location', JSON.stringify({ lat: latitude, lon: longitude, name }));
+          } catch (e) {
+            setLocationName("Current Location");
+          }
+          setLoading(false);
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          alert("লোকেশন পাওয়া যায়নি। দয়া করে ম্যানুয়ালি সার্চ করুন।");
+          setLoading(false);
+        },
+        { enableHighAccuracy: true }
+      );
+    }
+  };
+
   useEffect(() => {
     const savedReminders = localStorage.getItem('prayer_reminders');
     if (savedReminders) {
@@ -55,22 +85,14 @@ export default function PrayerTimes() {
       setCalcMethod(savedMethod);
     }
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setCoords(new Coordinates(latitude, longitude));
-          setLocationName("Current Location");
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          setCoords(new Coordinates(23.8103, 90.4125));
-          setLoading(false);
-        }
-      );
-    } else {
-      setCoords(new Coordinates(23.8103, 90.4125));
+    const savedLocation = localStorage.getItem('prayer_location');
+    if (savedLocation) {
+      const loc = JSON.parse(savedLocation);
+      setCoords(new Coordinates(loc.lat, loc.lon));
+      setLocationName(loc.name);
       setLoading(false);
+    } else {
+      refreshLocation();
     }
   }, []);
 
@@ -94,39 +116,35 @@ export default function PrayerTimes() {
     setShowMethodSelector(false);
   };
 
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+
   const handleManualSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualCity) return;
     
-    setLoading(true);
+    setSearching(true);
     try {
-      // Simple geocoding simulation or use a free API
-      // For this demo, we'll use a few hardcoded cities or just simulate success
-      const cities: Record<string, [number, number]> = {
-        'dhaka': [23.8103, 90.4125],
-        'chittagong': [22.3569, 91.7832],
-        'sylhet': [24.8949, 91.8687],
-        'khulna': [22.8456, 89.5403],
-        'london': [51.5074, -0.1278],
-        'new york': [40.7128, -74.0060],
-        'mecca': [21.4225, 39.8262],
-      };
-
-      const cityLower = manualCity.toLowerCase();
-      if (cities[cityLower]) {
-        setCoords(new Coordinates(cities[cityLower][0], cities[cityLower][1]));
-        setLocationName(manualCity);
-      } else {
-        // Fallback to Dhaka if not found in our small list
-        alert("City not found in demo list. Defaulting to Dhaka.");
-        setCoords(new Coordinates(23.8103, 90.4125));
-      }
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(manualCity)}&limit=5`);
+      const data = await response.json();
+      setSearchResults(data);
     } catch (err) {
       console.error(err);
+      alert("Search failed. Please try again.");
     } finally {
-      setShowManualInput(false);
-      setLoading(false);
+      setSearching(false);
     }
+  };
+
+  const selectLocation = (result: any) => {
+    const lat = parseFloat(result.lat);
+    const lon = parseFloat(result.lon);
+    setCoords(new Coordinates(lat, lon));
+    setLocationName(result.display_name.split(',')[0]);
+    localStorage.setItem('prayer_location', JSON.stringify({ lat, lon, name: result.display_name.split(',')[0] }));
+    setShowManualInput(false);
+    setSearchResults([]);
+    setManualCity("");
   };
 
   const toggleReminder = (prayer: string) => {
@@ -178,13 +196,22 @@ export default function PrayerTimes() {
       <header className="px-2 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">নামাজের সময়</h1>
-          <button 
-            onClick={() => setShowManualInput(true)}
-            className="flex items-center gap-1 text-emerald-600 font-medium mt-1 hover:underline"
-          >
-            <MapPin size={14} />
-            <span className="text-sm">{locationName}</span>
-          </button>
+          <div className="flex items-center gap-2 mt-1">
+            <button 
+              onClick={() => setShowManualInput(true)}
+              className="flex items-center gap-1 text-emerald-600 font-medium hover:underline"
+            >
+              <MapPin size={14} />
+              <span className="text-sm">{locationName}</span>
+            </button>
+            <button 
+              onClick={refreshLocation}
+              className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors"
+              title="লোকেশন রিফ্রেশ করুন"
+            >
+              <Clock size={12} className={loading ? "animate-spin" : ""} />
+            </button>
+          </div>
         </div>
         <div className="flex flex-col items-end gap-2">
           <button 
@@ -260,21 +287,38 @@ export default function PrayerTimes() {
                     value={manualCity}
                     onChange={(e) => setManualCity(e.target.value)}
                   />
+                  {searching && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                 </div>
+                
+                {searchResults.length > 0 && (
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {searchResults.map((result, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => selectLocation(result)}
+                        className="w-full text-left p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all"
+                      >
+                        <p className="text-sm font-bold text-slate-700 line-clamp-1">{result.display_name}</p>
+                        <p className="text-[10px] text-slate-400">Lat: {result.lat}, Lon: {result.lon}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">
                   খুঁজুন
                 </button>
                 <button 
                   type="button"
-                  onClick={() => {
-                    navigator.geolocation.getCurrentPosition((pos) => {
-                      setCoords(new Coordinates(pos.coords.latitude, pos.coords.longitude));
-                      setLocationName("Current Location");
-                      setShowManualInput(false);
-                    });
-                  }}
-                  className="w-full text-emerald-600 font-bold py-2 text-sm"
+                  onClick={refreshLocation}
+                  className="w-full text-emerald-600 font-bold py-2 text-sm flex items-center justify-center gap-2"
                 >
+                  <MapPin size={14} />
                   বর্তমান অবস্থান ব্যবহার করুন
                 </button>
               </form>

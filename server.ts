@@ -120,6 +120,11 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  app.get('/api/settings/all', (req, res) => {
+    const settings = db.prepare('SELECT key, value FROM settings').all();
+    res.json(settings);
+  });
+
   app.get('/api/settings/:key', (req, res) => {
     const setting = db.prepare('SELECT value FROM settings WHERE key = ?').get(req.params.key) as { value: string } | undefined;
     res.json({ value: setting?.value || null });

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { format } from 'date-fns';
 
 interface Event {
   id: number;
@@ -37,12 +38,22 @@ interface AppContextType {
   tasks: Task[];
   loading: boolean;
   hijriAdjustment: number;
+  theme: 'light' | 'dark';
+  firstDayOfWeek: number;
+  remindersEnabled: boolean;
+  productivityEnabled: boolean;
   setHijriAdjustment: (val: number) => Promise<void>;
+  setTheme: (val: 'light' | 'dark') => Promise<void>;
+  setFirstDayOfWeek: (val: number) => Promise<void>;
+  setRemindersEnabled: (val: boolean) => Promise<void>;
+  setProductivityEnabled: (val: boolean) => Promise<void>;
   refreshData: () => Promise<void>;
   addEvent: (event: Partial<Event>) => Promise<void>;
   toggleHabit: (habitId: number, date: string) => Promise<void>;
   toggleTask: (taskId: number, completed: boolean) => Promise<void>;
   addTask: (task: Partial<Task>) => Promise<void>;
+  exportData: () => Promise<void>;
+  importData: (json: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -53,6 +64,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [hijriAdjustment, setHijriAdjustmentState] = useState(0);
+  const [theme, setThemeState] = useState<'light' | 'dark'>('light');
+  const [firstDayOfWeek, setFirstDayOfWeekState] = useState(0);
+  const [remindersEnabled, setRemindersEnabledState] = useState(true);
+  const [productivityEnabled, setProductivityEnabledState] = useState(true);
   const [loading, setLoading] = useState(true);
 
   const refreshData = async () => {
@@ -61,19 +76,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         fetch('/api/events'),
         fetch('/api/habits'),
         fetch('/api/tasks'),
-        fetch('/api/settings/hijri_adjustment')
+        fetch('/api/settings/all')
       ]);
       
       const eventsData = await eventsRes.json();
       const { habits: habitsData, logs: logsData } = await habitsRes.json();
       const tasksData = await tasksRes.json();
-      const adjustmentData = await settingsRes.json();
+      const settingsData = await settingsRes.json();
 
       setEvents(eventsData);
       setHabits(habitsData);
       setHabitLogs(logsData);
       setTasks(tasksData);
-      setHijriAdjustmentState(parseInt(adjustmentData.value || '0'));
+      
+      // Map settings
+      const s = settingsData.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
+      setHijriAdjustmentState(parseInt(s.hijri_adjustment || '0'));
+      setThemeState((s.theme as 'light' | 'dark') || 'light');
+      setFirstDayOfWeekState(parseInt(s.first_day_of_week || '0'));
+      setRemindersEnabledState(s.reminders_enabled !== 'false');
+      setProductivityEnabledState(s.productivity_enabled !== 'false');
+
+      // Apply theme to document
+      if (s.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -81,13 +110,81 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const setHijriAdjustment = async (val: number) => {
+  const saveSetting = async (key: string, value: string) => {
     await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'hijri_adjustment', value: val.toString() })
+      body: JSON.stringify({ key, value })
     });
+  };
+
+  const setHijriAdjustment = async (val: number) => {
+    await saveSetting('hijri_adjustment', val.toString());
     setHijriAdjustmentState(val);
+  };
+
+  const setTheme = async (val: 'light' | 'dark') => {
+    await saveSetting('theme', val);
+    setThemeState(val);
+    if (val === 'dark') document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+  };
+
+  const setFirstDayOfWeek = async (val: number) => {
+    await saveSetting('first_day_of_week', val.toString());
+    setFirstDayOfWeekState(val);
+  };
+
+  const setRemindersEnabled = async (val: boolean) => {
+    await saveSetting('reminders_enabled', val.toString());
+    setRemindersEnabledState(val);
+  };
+
+  const setProductivityEnabled = async (val: boolean) => {
+    await saveSetting('productivity_enabled', val.toString());
+    setProductivityEnabledState(val);
+  };
+
+  const exportData = async () => {
+    const data = {
+      events,
+      habitLogs,
+      tasks,
+      settings: {
+        hijriAdjustment,
+        theme,
+        firstDayOfWeek,
+        remindersEnabled,
+        productivityEnabled
+      }
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `al-mawaqit-backup-${format(new Date(), 'yyyy-MM-dd')}.json`;
+    a.click();
+  };
+
+  const importData = async (json: string) => {
+    try {
+      const data = JSON.parse(json);
+      // This would ideally be a single batch API call, but for simplicity:
+      if (data.settings) {
+        await Promise.all([
+          setHijriAdjustment(data.settings.hijriAdjustment),
+          setTheme(data.settings.theme),
+          setFirstDayOfWeek(data.settings.firstDayOfWeek),
+          setRemindersEnabled(data.settings.remindersEnabled),
+          setProductivityEnabled(data.settings.productivityEnabled)
+        ]);
+      }
+      // Note: Full data import (events, tasks) would require backend support for bulk insert
+      alert('Settings restored successfully! (Data import requires server sync)');
+      await refreshData();
+    } catch (e) {
+      alert('Invalid backup file');
+    }
   };
 
   useEffect(() => {
