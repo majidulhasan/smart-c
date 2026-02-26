@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { 
   Moon, Sun, Calendar, Bell, TrendingUp, 
   Download, Upload, Type, Volume2, 
-  ChevronRight, Globe, Shield, Info
+  ChevronRight, Globe, Shield, Info, LayoutGrid
 } from 'lucide-react';
 
 export default function SettingsScreen() {
@@ -135,6 +135,21 @@ export default function SettingsScreen() {
       {/* Intelligence Systems */}
       <section className="space-y-3">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-2">Intelligence</h3>
+        
+        <SettingItem 
+          icon={LayoutGrid} 
+          label="Widget Mode" 
+          description="Open home screen widget view"
+          color="text-emerald-500"
+        >
+          <button 
+            onClick={() => window.open('/widget', '_blank')}
+            className="px-4 py-2 bg-emerald-600 text-white text-[10px] font-bold rounded-xl shadow-lg shadow-emerald-600/20"
+          >
+            OPEN
+          </button>
+        </SettingItem>
+
         <SettingItem 
           icon={Bell} 
           label="Islamic Reminder Engine" 
