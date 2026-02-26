@@ -233,7 +233,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider value={{ 
       events, habits, habitLogs, tasks, loading, 
-      refreshData, addEvent, toggleHabit, toggleTask, addTask 
+      hijriAdjustment, theme, firstDayOfWeek, remindersEnabled, productivityEnabled,
+      setHijriAdjustment, setTheme, setFirstDayOfWeek, setRemindersEnabled, setProductivityEnabled,
+      refreshData, addEvent, toggleHabit, toggleTask, addTask, exportData, importData
     }}>
       {children}
     </AppContext.Provider>

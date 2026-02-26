@@ -12,7 +12,6 @@ export default function PrayerTracker() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Try to get saved location first
     const savedLocation = localStorage.getItem('prayer_location');
     if (savedLocation) {
       const loc = JSON.parse(savedLocation);
@@ -22,10 +21,7 @@ export default function PrayerTracker() {
         (position) => {
           setCoords(new Coordinates(position.coords.latitude, position.coords.longitude));
         },
-        () => {
-          // Fallback to Dhaka
-          setCoords(new Coordinates(23.8103, 90.4125));
-        }
+        () => setCoords(new Coordinates(23.8103, 90.4125))
       );
     } else {
       setCoords(new Coordinates(23.8103, 90.4125));
@@ -61,7 +57,6 @@ export default function PrayerTracker() {
   const currentPrayer = prayerTimes.currentPrayer();
   const nextPrayer = prayerTimes.nextPrayer();
   
-  // Get prayer name in Bengali
   const prayerNames: any = {
     fajr: 'ফজর',
     sunrise: 'সূর্যোদয়',
@@ -76,7 +71,6 @@ export default function PrayerTracker() {
   const currentPrayerTime = prayerTimes.timeForPrayer(currentPrayer);
   const nextPrayerTime = prayerTimes.timeForPrayer(nextPrayer);
 
-  // Calculate progress
   let progress = 0;
   let timeRemainingStr = "";
   
@@ -96,12 +90,6 @@ export default function PrayerTracker() {
     }
   }
 
-  // Sehri and Iftar
-  const sehriTime = prayerTimes.fajr;
-  const iftarTime = prayerTimes.maghrib;
-
-  // Sun Arc Calculation (Simplified)
-  // Sunrise to Sunset is the arc
   const sunrise = prayerTimes.sunrise;
   const sunset = prayerTimes.sunset;
   let sunPosition = 0;
@@ -117,101 +105,102 @@ export default function PrayerTracker() {
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-6 shadow-sm border border-slate-100 dark:border-slate-700 space-y-6 overflow-hidden relative"
+      className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 shadow-sm border border-slate-200 dark:border-slate-700 space-y-8 overflow-hidden relative"
     >
-      {/* Sun Arc Visualization */}
-      <div className="relative h-32 flex items-end justify-center px-4">
-        <div className="absolute inset-0 flex items-center justify-center opacity-5">
-          <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/mosque.png')] bg-center bg-no-repeat bg-contain" />
+      {/* Sun Arc Section */}
+      <div className="relative h-40 flex items-end justify-center">
+        {/* Mosque Background Silhouette */}
+        <div className="absolute inset-0 flex items-end justify-center opacity-[0.03] pointer-events-none">
+          <svg viewBox="0 0 800 300" className="w-full h-full">
+            <path d="M0,300 L0,250 Q50,250 100,200 L100,150 Q150,100 200,150 L200,200 Q250,250 300,250 L300,100 Q400,0 500,100 L500,250 Q550,250 600,200 L600,150 Q650,100 700,150 L700,200 Q750,250 800,250 L800,300 Z" fill="currentColor" />
+          </svg>
         </div>
-        
+
         {/* The Arc */}
-        <svg className="absolute bottom-0 w-full h-24 overflow-visible" viewBox="0 0 100 40">
+        <svg className="absolute bottom-12 w-full h-32 overflow-visible" viewBox="0 0 100 40">
           <path 
             d="M 0 40 Q 50 -10 100 40" 
             fill="none" 
-            stroke="currentColor" 
+            stroke="#E2E8F0" 
             strokeWidth="0.5" 
             strokeDasharray="2 2"
-            className="text-slate-200 dark:text-slate-700"
           />
           {/* Sun on Arc */}
-          {sunPosition > 0 && sunPosition < 100 && (
-            <motion.g
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{ 
-                offsetPath: "path('M 0 40 Q 50 -10 100 40')",
-                offsetDistance: `${sunPosition}%`
-              }}
-              className="absolute"
-            >
-              <circle r="3" fill="#fbbf24" />
-              <circle r="5" fill="#fbbf24" opacity="0.2" />
-            </motion.g>
-          )}
+          <motion.g
+            style={{ 
+              offsetPath: "path('M 0 40 Q 50 -10 100 40')",
+              offsetDistance: `${sunPosition}%`
+            }}
+          >
+            <circle r="6" fill="#FBBF24" />
+            <g className="animate-pulse">
+              {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
+                <rect key={deg} x="-1" y="-10" width="2" height="4" fill="#FBBF24" transform={`rotate(${deg})`} rx="1" />
+              ))}
+            </g>
+          </motion.g>
         </svg>
 
-        {/* Key Times on Arc */}
-        <div className="absolute bottom-0 left-0 flex flex-col items-center -translate-x-1/2">
-          <div className="bg-emerald-50 dark:bg-emerald-900/30 p-1 rounded-lg border border-emerald-100 dark:border-emerald-800 mb-1">
-            <Sunrise size={12} className="text-emerald-500" />
+        {/* Sunrise/Sunset Markers */}
+        <div className="absolute bottom-12 left-0 -translate-x-1/2 flex items-center bg-[#E8F5F2] dark:bg-emerald-900/20 px-3 py-1.5 rounded-xl border border-emerald-100 dark:border-emerald-800">
+          <div className="bg-amber-400 p-1 rounded-lg mr-2">
+            <Sunrise size={14} className="text-white" />
           </div>
-          <span className="text-[10px] font-bold text-slate-400">{toBanglaNumber(format(sunrise, 'h:mm'))}</span>
+          <span className="text-sm font-bold text-[#2D3E33] dark:text-emerald-400">{toBanglaNumber(format(sunrise, 'h:mm'))}</span>
         </div>
 
-        <div className="absolute bottom-0 right-0 flex flex-col items-center translate-x-1/2">
-          <div className="bg-orange-50 dark:bg-orange-900/30 p-1 rounded-lg border border-orange-100 dark:border-orange-800 mb-1">
-            <Sunset size={12} className="text-orange-500" />
+        <div className="absolute bottom-12 right-0 translate-x-1/2 flex items-center bg-[#FDF2F2] dark:bg-orange-900/20 px-3 py-1.5 rounded-xl border border-orange-100 dark:border-orange-800">
+          <span className="text-sm font-bold text-[#2D3E33] dark:text-orange-400 mr-2">{toBanglaNumber(format(sunset, 'h:mm'))}</span>
+          <div className="bg-amber-400 p-1 rounded-lg">
+            <Sunset size={14} className="text-white" />
           </div>
-          <span className="text-[10px] font-bold text-slate-400">{toBanglaNumber(format(sunset, 'h:mm'))}</span>
         </div>
 
-        {/* Noon Indicator */}
+        {/* Noon Marker */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <div className="bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-full border border-amber-100 dark:border-amber-800 flex items-center gap-1 shadow-sm">
-            <Sun size={12} className="text-amber-500" />
-            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">{toBanglaNumber(format(prayerTimes.dhuhr, 'h:mm'))}</span>
+          <div className="bg-[#F1F3F4] dark:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 flex items-center gap-2 shadow-sm">
+            <Sun size={14} className="text-amber-500" />
+            <span className="text-sm font-bold text-[#2D3E33] dark:text-white">{toBanglaNumber(format(prayerTimes.dhuhr, 'h:mm'))}</span>
           </div>
-          <div className="w-px h-12 bg-slate-200 dark:bg-slate-700 mt-1" />
+          <div className="w-px h-16 bg-slate-300 dark:bg-slate-600 mt-1" />
         </div>
 
-        {/* Sahri & Iftar Labels */}
-        <div className="absolute top-10 left-0 text-center w-1/2 pr-4">
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">সাহরি শেষ {toBanglaNumber(format(sehriTime, 'h:mm'))} মি.</p>
+        {/* Sahri/Iftar Labels */}
+        <div className="absolute top-12 left-0 w-1/2 text-center pr-8">
+          <p className="text-lg font-bold text-[#2D3E33] dark:text-white">সাহরি শেষ {toBanglaNumber(format(prayerTimes.fajr, 'h:mm'))} মি.</p>
         </div>
-        <div className="absolute top-10 right-0 text-center w-1/2 pl-4">
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">ইফতার {toBanglaNumber(format(iftarTime, 'h:mm'))} মি.</p>
+        <div className="absolute top-12 right-0 w-1/2 text-center pl-8">
+          <p className="text-lg font-bold text-[#2D3E33] dark:text-white">ইফতার {toBanglaNumber(format(prayerTimes.maghrib, 'h:mm'))} মি.</p>
         </div>
       </div>
 
-      {/* Current Prayer Info */}
-      <div className="space-y-4 pt-4 border-t border-slate-50 dark:border-slate-700">
-        <div className="flex justify-between items-end">
-          <div>
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{currentPrayerName}</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">চলমান</span>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-lg font-bold text-slate-600 dark:text-slate-300">
-              {toBanglaNumber(format(currentPrayerTime || new Date(), 'hh:mm'))} - {toBanglaNumber(format(nextPrayerTime || new Date(), 'hh:mm'))}
-            </p>
-            <p className="text-xs font-bold text-slate-400 mt-1">{timeRemainingStr}</p>
-          </div>
+      {/* Current Prayer Section */}
+      <div className="space-y-6 pt-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-3xl font-bold text-[#2D3E33] dark:text-white">{currentPrayerName}</h3>
+          <p className="text-2xl font-bold text-[#2D3E33] dark:text-slate-300">
+            {toBanglaNumber(format(currentPrayerTime || new Date(), 'hh:mm'))} - {toBanglaNumber(format(nextPrayerTime || new Date(), 'hh:mm'))}
+          </p>
         </div>
 
         {/* Progress Bar */}
-        <div className="relative h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div className="h-4 bg-[#F1F3F4] dark:bg-slate-700 rounded-full overflow-hidden">
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            className="absolute inset-y-0 left-0 bg-emerald-500 rounded-full"
+            className="h-full bg-[#00C853] rounded-full"
           />
+        </div>
+
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-[#00C853]" />
+            <span className="text-lg font-bold text-[#2D3E33] dark:text-emerald-400">চলমান</span>
+          </div>
+          <p className="text-2xl font-bold text-[#2D3E33] dark:text-white">{timeRemainingStr}</p>
         </div>
       </div>
     </motion.div>
   );
 }
+
