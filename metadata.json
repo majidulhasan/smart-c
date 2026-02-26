@@ -1,0 +1,8 @@
+{
+  "name": "Al-Mawaqit: Smart Multi-Calendar",
+  "description": "A comprehensive Islamic, Bangla, and Gregorian calendar with productivity intelligence, habit tracking, and automated reminders.",
+  "requestFramePermissions": [
+    "notifications",
+    "geolocation"
+  ]
+}
